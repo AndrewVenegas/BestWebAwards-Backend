@@ -23,7 +23,7 @@ const getMyTeams = async (req, res) => {
 const updateTeam = async (req, res) => {
   try {
     const { teamId } = req.params;
-    const { participates, displayName, appName, deployUrl, videoUrl, screenshotUrl } = req.body;
+    const { participates, displayName, appName, deployUrl, videoUrl, screenshotUrl, tipo_app } = req.body;
 
     const team = await db.Team.findOne({
       where: { id: teamId, helperId: req.user.id }
@@ -98,6 +98,15 @@ const updateTeam = async (req, res) => {
 
     if (participates !== undefined) {
       team.participates = participates;
+    }
+
+    if (tipo_app !== undefined) {
+      const validTypes = ['Chat', 'E-commerce', 'Juego', 'Planificador', 'Red Social', 'Mix', 'Otro', null, ''];
+      if (tipo_app && !validTypes.includes(tipo_app)) {
+        errors.push('Tipo de aplicación no válido');
+      } else {
+        team.tipo_app = tipo_app || null;
+      }
     }
 
     // Si hay errores, retornarlos sin guardar

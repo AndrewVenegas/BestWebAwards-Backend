@@ -35,6 +35,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    tipo_app: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isIn: [['Chat', 'E-commerce', 'Juego', 'Planificador', 'Red Social', 'Mix', 'Otro', null]]
+      }
+    },
     helperId: {
       type: DataTypes.INTEGER,
       allowNull: true,

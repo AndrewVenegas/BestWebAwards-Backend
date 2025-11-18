@@ -315,14 +315,15 @@ const getTeams = async (req, res) => {
 
 const createTeam = async (req, res) => {
   try {
-    const { groupName, displayName, appName, helperId, participates } = req.body;
+    const { groupName, displayName, appName, helperId, participates, tipo_app } = req.body;
     
     const team = await db.Team.create({
       groupName,
       displayName,
       appName,
       helperId: helperId || null,
-      participates: participates || false
+      participates: participates || false,
+      tipo_app: tipo_app || null
     });
     
     res.status(201).json(team);
@@ -334,7 +335,7 @@ const createTeam = async (req, res) => {
 
 const updateTeam = async (req, res) => {
   try {
-    const { groupName, displayName, appName, helperId, participates, deployUrl, videoUrl, screenshotUrl } = req.body;
+    const { groupName, displayName, appName, helperId, participates, deployUrl, videoUrl, screenshotUrl, tipo_app } = req.body;
     const team = await db.Team.findByPk(req.params.id);
     
     if (!team) {
@@ -349,6 +350,13 @@ const updateTeam = async (req, res) => {
     if (deployUrl !== undefined) team.deployUrl = deployUrl;
     if (videoUrl !== undefined) team.videoUrl = videoUrl;
     if (screenshotUrl !== undefined) team.screenshotUrl = screenshotUrl;
+    if (tipo_app !== undefined) {
+      const validTypes = ['Chat', 'E-commerce', 'Juego', 'Planificador', 'Red Social', 'Mix', 'Otro', null, ''];
+      if (tipo_app && !validTypes.includes(tipo_app)) {
+        return res.status(400).json({ error: 'Tipo de aplicación no válido' });
+      }
+      team.tipo_app = tipo_app || null;
+    }
     
     await team.save();
     res.json(team);
