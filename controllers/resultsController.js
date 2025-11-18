@@ -10,11 +10,13 @@ const getPodium = async (req, res) => {
         t."displayName",
         t."appName",
         t."screenshotUrl",
+        t."videoUrl",
+        t."deployUrl",
         COUNT(v.id) as "voteCount"
       FROM teams t
       LEFT JOIN votes v ON v."teamId" = t.id
       WHERE t.participates = true
-      GROUP BY t.id, t."groupName", t."displayName", t."appName", t."screenshotUrl"
+      GROUP BY t.id, t."groupName", t."displayName", t."appName", t."screenshotUrl", t."videoUrl", t."deployUrl"
       HAVING COUNT(v.id) > 0
       ORDER BY "voteCount" DESC
     `);
@@ -72,6 +74,8 @@ const getPodium = async (req, res) => {
         displayName: row.displayName,
         appName: row.appName,
         screenshotUrl: row.screenshotUrl,
+        videoUrl: row.videoUrl,
+        deployUrl: row.deployUrl,
         voteCount: voteCount,
         students: relations.students,
         helper: relations.helper
