@@ -65,44 +65,46 @@ const getVisibleCounts = async (req, res) => {
   try {
     const studentId = req.user.id;
 
-    // Verificar si el estudiante ha votado al menos una vez
-    const voteCount = await db.Vote.count({
-      where: { studentId }
-    });
+    // Verificar si las votaciones están cerradas
+    const config = await db.Config.findOne({ where: { id: 1 } });
+    const now = new Date();
+    const votingClosed = config && now > new Date(config.votingDeadline);
 
-    if (voteCount === 0) {
-      return res.json({ showCounts: false, counts: [] });
+    // Si las votaciones están cerradas, mostrar conteos a todos
+    // Si están abiertas, solo mostrar si el estudiante ha votado
+    if (!votingClosed) {
+      const voteCount = await db.Vote.count({
+        where: { studentId }
+      });
+
+      if (voteCount === 0) {
+        return res.json({ showCounts: false, counts: [] });
+      }
     }
 
-    // Obtener conteos de votos por equipo
-    const teams = await db.Team.findAll({
-      where: { participates: true },
-      include: [
-        {
-          model: db.Vote,
-          as: 'votes',
-          attributes: []
-        }
-      ],
-      attributes: [
-        'id',
-        'groupName',
-        'displayName',
-        'appName',
-        'screenshotUrl',
-        [db.sequelize.fn('COUNT', db.sequelize.col('votes.id')), 'voteCount']
-      ],
-      group: ['Team.id'],
-      order: [[db.sequelize.literal('voteCount'), 'DESC']]
-    });
+    // Obtener conteos de votos por equipo usando consulta SQL directa
+    const [results] = await db.sequelize.query(`
+      SELECT 
+        t.id as "teamId",
+        t."groupName",
+        t."displayName",
+        t."appName",
+        t."screenshotUrl",
+        COUNT(v.id) as "voteCount"
+      FROM teams t
+      LEFT JOIN votes v ON v."teamId" = t.id
+      WHERE t.participates = true
+      GROUP BY t.id, t."groupName", t."displayName", t."appName", t."screenshotUrl"
+      ORDER BY "voteCount" DESC
+    `);
 
-    const counts = teams.map(team => ({
-      teamId: team.id,
-      groupName: team.groupName,
-      displayName: team.displayName,
-      appName: team.appName,
-      screenshotUrl: team.screenshotUrl,
-      voteCount: parseInt(team.get('voteCount'))
+    const counts = results.map(row => ({
+      teamId: parseInt(row.teamId),
+      groupName: row.groupName,
+      displayName: row.displayName,
+      appName: row.appName,
+      screenshotUrl: row.screenshotUrl,
+      voteCount: parseInt(row.voteCount) || 0
     }));
 
     res.json({ showCounts: true, counts });
