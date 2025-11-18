@@ -80,7 +80,17 @@ const markIntroAsSeen = async (req, res) => {
     student.hasSeenIntro = true;
     await student.save();
 
-    res.json({ message: 'Introducción marcada como vista', hasSeenIntro: true });
+    res.json({ 
+      message: 'Introducción marcada como vista', 
+      hasSeenIntro: true,
+      student: {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        avatarUrl: student.avatarUrl,
+        hasSeenIntro: student.hasSeenIntro
+      }
+    });
   } catch (error) {
     console.error('Error en markIntroAsSeen:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

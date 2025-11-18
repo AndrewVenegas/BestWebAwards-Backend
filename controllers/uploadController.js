@@ -33,11 +33,22 @@ const uploadAvatar = async (req, res) => {
       return res.status(400).json({ error: 'No se proporcionó ningún archivo' });
     }
 
+    console.log('Subiendo avatar a Cloudinary...');
     const result = await uploadToCloudinary(req.file.buffer);
+    
+    console.log('Avatar subido exitosamente:', result.secure_url);
     res.json({ url: result.secure_url });
   } catch (error) {
     console.error('Error en uploadAvatar:', error);
-    res.status(500).json({ error: 'Error al subir la imagen' });
+    console.error('Detalles del error:', {
+      message: error.message,
+      http_code: error.http_code,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Error al subir la imagen',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -47,11 +58,25 @@ const uploadScreenshot = async (req, res) => {
       return res.status(400).json({ error: 'No se proporcionó ningún archivo' });
     }
 
+    console.log('Subiendo screenshot a Cloudinary...');
+    console.log('Tamaño del archivo:', req.file.size, 'bytes');
+    console.log('Tipo MIME:', req.file.mimetype);
+
     const result = await uploadToCloudinary(req.file.buffer);
+    
+    console.log('Screenshot subido exitosamente:', result.secure_url);
     res.json({ url: result.secure_url });
   } catch (error) {
     console.error('Error en uploadScreenshot:', error);
-    res.status(500).json({ error: 'Error al subir la imagen' });
+    console.error('Detalles del error:', {
+      message: error.message,
+      http_code: error.http_code,
+      name: error.name
+    });
+    res.status(500).json({ 
+      error: 'Error al subir la imagen',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
