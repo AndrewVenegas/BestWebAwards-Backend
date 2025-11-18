@@ -21,6 +21,7 @@ router.delete('/helpers/:id', authenticateToken, requireRole('admin'), adminCont
 router.get('/admins', authenticateToken, requireRole('admin'), adminController.getAdmins);
 router.post('/admins', authenticateToken, requireRole('admin'), adminController.createAdmin);
 router.put('/admins/:id', authenticateToken, requireRole('admin'), adminController.updateAdmin);
+router.post('/admins/verify-password', authenticateToken, requireRole('admin'), adminController.verifyAdminPassword);
 router.delete('/admins/:id', authenticateToken, requireRole('admin'), adminController.deleteAdmin);
 
 // Teams CRUD

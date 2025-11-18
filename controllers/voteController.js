@@ -63,8 +63,6 @@ const createVote = async (req, res) => {
 
 const getVisibleCounts = async (req, res) => {
   try {
-    const studentId = req.user.id;
-
     // Verificar si las votaciones están cerradas
     const config = await db.Config.findOne({ where: { id: 1 } });
     const now = new Date();
@@ -73,11 +71,18 @@ const getVisibleCounts = async (req, res) => {
     // Si las votaciones están cerradas, mostrar conteos a todos
     // Si están abiertas, solo mostrar si el estudiante ha votado
     if (!votingClosed) {
-      const voteCount = await db.Vote.count({
-        where: { studentId }
-      });
+      // Solo verificar votos del estudiante si es estudiante
+      if (req.user.role === 'student') {
+        const studentId = req.user.id;
+        const voteCount = await db.Vote.count({
+          where: { studentId }
+        });
 
-      if (voteCount === 0) {
+        if (voteCount === 0) {
+          return res.json({ showCounts: false, counts: [] });
+        }
+      } else {
+        // Si no es estudiante y las votaciones están abiertas, no mostrar conteos
         return res.json({ showCounts: false, counts: [] });
       }
     }

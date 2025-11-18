@@ -169,6 +169,23 @@ const getAdmins = async (req, res) => {
 const createAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    
+    // Validar campos requeridos
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+    
+    // Validar longitud mínima de contraseña
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    
+    // Verificar si el email ya existe
+    const existingAdmin = await db.Admin.findOne({ where: { email } });
+    if (existingAdmin) {
+      return res.status(400).json({ error: 'Ya existe un administrador con este email' });
+    }
+    
     const passwordHash = await bcrypt.hash(password, 10);
     
     const admin = await db.Admin.create({
@@ -181,6 +198,12 @@ const createAdmin = async (req, res) => {
     res.status(201).json(admin);
   } catch (error) {
     console.error('Error en createAdmin:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Ya existe un administrador con este email' });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.errors[0]?.message || 'Error de validación' });
+    }
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -206,12 +229,65 @@ const updateAdmin = async (req, res) => {
   }
 };
 
-const deleteAdmin = async (req, res) => {
+const verifyAdminPassword = async (req, res) => {
   try {
-    const admin = await db.Admin.findByPk(req.params.id);
+    const { password } = req.body;
+    const adminId = req.user.id; // ID del admin logueado
+    
+    if (!password) {
+      return res.status(400).json({ error: 'La contraseña es requerida' });
+    }
+    
+    const admin = await db.Admin.findByPk(adminId);
     if (!admin) {
       return res.status(404).json({ error: 'Administrador no encontrado' });
     }
+    
+    const isValidPassword = await bcrypt.compare(password, admin.passwordHash);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+    
+    res.json({ valid: true });
+  } catch (error) {
+    console.error('Error en verifyAdminPassword:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+const deleteAdmin = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const adminId = req.params.id;
+    const loggedAdminId = req.user.id; // ID del admin logueado
+    
+    // Validar que se proporcione la contraseña
+    if (!password) {
+      return res.status(400).json({ error: 'Se requiere confirmación de contraseña para eliminar un administrador' });
+    }
+    
+    // Verificar la contraseña del admin logueado
+    const loggedAdmin = await db.Admin.findByPk(loggedAdminId);
+    if (!loggedAdmin) {
+      return res.status(404).json({ error: 'Administrador no encontrado' });
+    }
+    
+    const isValidPassword = await bcrypt.compare(password, loggedAdmin.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+    
+    // No permitir que un admin se elimine a sí mismo
+    if (parseInt(adminId) === loggedAdminId) {
+      return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
+    }
+    
+    const admin = await db.Admin.findByPk(adminId);
+    if (!admin) {
+      return res.status(404).json({ error: 'Administrador no encontrado' });
+    }
+    
     await admin.destroy();
     res.json({ message: 'Administrador eliminado' });
   } catch (error) {
@@ -399,6 +475,7 @@ module.exports = {
   createAdmin,
   updateAdmin,
   deleteAdmin,
+  verifyAdminPassword,
   getTeams,
   createTeam,
   updateTeam,
