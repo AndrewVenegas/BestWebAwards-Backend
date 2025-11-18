@@ -299,39 +299,35 @@ const deleteTeam = async (req, res) => {
 // Dashboard
 const getVotesSummary = async (req, res) => {
   try {
-    const teams = await db.Team.findAll({
-      where: { participates: true },
-      include: [
-        {
-          model: db.Vote,
-          as: 'votes',
-          attributes: []
-        }
-      ],
-      attributes: [
-        'id',
-        'groupName',
-        'displayName',
-        'appName',
-        'screenshotUrl',
-        [db.sequelize.fn('COUNT', db.sequelize.col('votes.id')), 'voteCount']
-      ],
-      group: ['Team.id'],
-      order: [[db.sequelize.literal('voteCount'), 'DESC']]
-    });
+    // Usar consulta SQL directa para evitar problemas con GROUP BY en Sequelize
+    const [results] = await db.sequelize.query(`
+      SELECT 
+        t.id as "teamId",
+        t."groupName",
+        t."displayName",
+        t."appName",
+        t."screenshotUrl",
+        COUNT(v.id) as "voteCount"
+      FROM teams t
+      LEFT JOIN votes v ON v."teamId" = t.id
+      WHERE t.participates = true
+      GROUP BY t.id, t."groupName", t."displayName", t."appName", t."screenshotUrl"
+      ORDER BY "voteCount" DESC
+    `);
 
-    const summary = teams.map(team => ({
-      teamId: team.id,
-      groupName: team.groupName,
-      displayName: team.displayName,
-      appName: team.appName,
-      screenshotUrl: team.screenshotUrl,
-      voteCount: parseInt(team.get('voteCount'))
+    const summary = results.map(row => ({
+      teamId: parseInt(row.teamId),
+      groupName: row.groupName,
+      displayName: row.displayName,
+      appName: row.appName,
+      screenshotUrl: row.screenshotUrl,
+      voteCount: parseInt(row.voteCount) || 0
     }));
 
     res.json(summary);
   } catch (error) {
     console.error('Error en getVotesSummary:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
