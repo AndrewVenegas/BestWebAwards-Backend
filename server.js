@@ -17,6 +17,7 @@ app.use('/api/students', require('./routes/students'));
 app.use('/api/helpers', require('./routes/helpers'));
 app.use('/api/teams', require('./routes/teams'));
 app.use('/api/votes', require('./routes/votes'));
+app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/config', require('./routes/config'));
 app.use('/api/results', require('./routes/results'));

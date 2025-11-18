@@ -20,6 +20,25 @@ const getAllTeams = async (req, res) => {
       order: db.sequelize.literal('RANDOM()')
     });
 
+    // Si hay un usuario autenticado y es estudiante, incluir información de favoritos
+    if (req.user && req.user.role === 'student') {
+      const studentId = req.user.id;
+      const favorites = await db.Favorite.findAll({
+        where: { studentId },
+        attributes: ['teamId']
+      });
+      const favoriteTeamIds = favorites.map(fav => fav.teamId);
+
+      // Agregar isFavorite a cada equipo
+      const teamsWithFavorites = teams.map(team => {
+        const teamData = team.toJSON();
+        teamData.isFavorite = favoriteTeamIds.includes(team.id);
+        return teamData;
+      });
+
+      return res.json(teamsWithFavorites);
+    }
+
     res.json(teams);
   } catch (error) {
     console.error('Error en getAllTeams:', error);

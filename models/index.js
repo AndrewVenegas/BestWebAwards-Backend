@@ -20,6 +20,7 @@ db.Helper = require('./Helper')(sequelize, Sequelize.DataTypes);
 db.Student = require('./Student')(sequelize, Sequelize.DataTypes);
 db.Team = require('./Team')(sequelize, Sequelize.DataTypes);
 db.Vote = require('./Vote')(sequelize, Sequelize.DataTypes);
+db.Favorite = require('./Favorite')(sequelize, Sequelize.DataTypes);
 db.Config = require('./Config')(sequelize, Sequelize.DataTypes);
 
 // Definir relaciones
@@ -34,6 +35,12 @@ db.Vote.belongsTo(db.Student, { foreignKey: 'studentId', as: 'student' });
 
 db.Team.hasMany(db.Vote, { foreignKey: 'teamId', as: 'votes' });
 db.Vote.belongsTo(db.Team, { foreignKey: 'teamId', as: 'team' });
+
+db.Student.hasMany(db.Favorite, { foreignKey: 'studentId', as: 'favorites' });
+db.Favorite.belongsTo(db.Student, { foreignKey: 'studentId', as: 'student' });
+
+db.Team.hasMany(db.Favorite, { foreignKey: 'teamId', as: 'favorites' });
+db.Favorite.belongsTo(db.Team, { foreignKey: 'teamId', as: 'team' });
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
