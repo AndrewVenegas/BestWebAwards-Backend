@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const db = require('./models');
 
 const app = express();
@@ -26,10 +27,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Error handler
+// Error handler para multer
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Error interno del servidor' });
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'El archivo es demasiado grande (máximo 5MB)' });
+    }
+    return res.status(400).json({ error: 'Error al procesar el archivo: ' + err.message });
+  }
+  
+  console.error('Error en servidor:', err);
+  console.error('Stack:', err.stack);
+  res.status(500).json({ 
+    error: 'Error interno del servidor',
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -9,21 +9,51 @@ const upload = multer({
   }
 });
 
-const uploadToCloudinary = (buffer) => {
+const uploadToCloudinary = (buffer, mimetype) => {
   return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'bestwebawards',
-        resource_type: 'auto'
-      },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
+    try {
+      // Determinar el tipo de imagen basado en el mimetype
+      let imageType = 'jpeg';
+      if (mimetype) {
+        if (mimetype.includes('png')) imageType = 'png';
+        else if (mimetype.includes('gif')) imageType = 'gif';
+        else if (mimetype.includes('webp')) imageType = 'webp';
       }
-    );
-
-    const stream = Readable.from(buffer);
-    stream.pipe(uploadStream);
+      
+      // Convertir buffer a base64 para subir a Cloudinary
+      const base64String = buffer.toString('base64');
+      const dataUri = `data:image/${imageType};base64,${base64String}`;
+      
+      console.log('Subiendo a Cloudinary, tipo:', imageType, 'tamaño:', buffer.length, 'bytes');
+      
+      cloudinary.uploader.upload(
+        dataUri,
+        {
+          folder: 'bestwebawards',
+          resource_type: 'image',
+          overwrite: true,
+          use_filename: true,
+          unique_filename: true
+        },
+        (error, result) => {
+          if (error) {
+            console.error('Error de Cloudinary:', error);
+            console.error('Detalles:', {
+              message: error.message,
+              http_code: error.http_code,
+              name: error.name
+            });
+            reject(error);
+          } else {
+            console.log('Upload exitoso, URL:', result.secure_url);
+            resolve(result);
+          }
+        }
+      );
+    } catch (err) {
+      console.error('Error al procesar imagen:', err);
+      reject(err);
+    }
   });
 };
 
@@ -34,7 +64,12 @@ const uploadAvatar = async (req, res) => {
     }
 
     console.log('Subiendo avatar a Cloudinary...');
-    const result = await uploadToCloudinary(req.file.buffer);
+    console.log('Archivo recibido:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+    const result = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
     
     console.log('Avatar subido exitosamente:', result.secure_url);
     res.json({ url: result.secure_url });
@@ -59,10 +94,13 @@ const uploadScreenshot = async (req, res) => {
     }
 
     console.log('Subiendo screenshot a Cloudinary...');
-    console.log('Tamaño del archivo:', req.file.size, 'bytes');
-    console.log('Tipo MIME:', req.file.mimetype);
+    console.log('Archivo recibido:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
 
-    const result = await uploadToCloudinary(req.file.buffer);
+    const result = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
     
     console.log('Screenshot subido exitosamente:', result.secure_url);
     res.json({ url: result.secure_url });

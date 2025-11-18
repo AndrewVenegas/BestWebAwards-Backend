@@ -7,6 +7,7 @@ router.get('/me', authenticateToken, requireRole('student'), studentController.g
 router.put('/me', authenticateToken, requireRole('student'), studentController.updateMe);
 router.get('/me/votes', authenticateToken, requireRole('student'), studentController.getMyVotes);
 router.put('/me/intro', authenticateToken, requireRole('student'), studentController.markIntroAsSeen);
+router.post('/me/verify-password', authenticateToken, requireRole('student'), studentController.verifyPassword);
 
 module.exports = router;
 
