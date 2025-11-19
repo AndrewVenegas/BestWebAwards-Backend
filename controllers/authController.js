@@ -28,12 +28,12 @@ const login = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: 'Email no registrado en el sistema.' });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: 'Contraseña incorrecta. Ingresa tu número de alumno.'});
     }
 
     const token = jwt.sign(
