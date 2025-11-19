@@ -3,7 +3,8 @@ const db = require('../models');
 const toggleFavorite = async (req, res) => {
   try {
     const { teamId } = req.body;
-    const studentId = req.user.id;
+    const userId = req.user.id;
+    const userType = req.user.type || req.user.role;
 
     if (!teamId) {
       return res.status(400).json({ error: 'teamId es requerido' });
@@ -14,6 +15,11 @@ const toggleFavorite = async (req, res) => {
     if (!team) {
       return res.status(404).json({ error: 'Equipo no encontrado' });
     }
+
+    // Para estudiantes, helpers y admins, usar el mismo modelo Favorite
+    // Nota: El modelo usa studentId, pero podemos usar el userId de cualquier tipo de usuario
+    // ya que los IDs no se solapan entre las tablas
+    const studentId = userId;
 
     // Buscar si ya existe el favorito
     const existingFavorite = await db.Favorite.findOne({
@@ -46,7 +52,9 @@ const toggleFavorite = async (req, res) => {
 
 const getMyFavorites = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
+    // Usar userId como studentId (los IDs no se solapan entre estudiantes, helpers y admins)
+    const studentId = userId;
 
     const favorites = await db.Favorite.findAll({
       where: { studentId },

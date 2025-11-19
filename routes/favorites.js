@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const favoriteController = require('../controllers/favoriteController');
-const { authenticateToken, requireRole } = require('../middlewares/auth');
+const { authenticateToken } = require('../middlewares/auth');
 
-router.post('/', authenticateToken, requireRole('student'), favoriteController.toggleFavorite);
-router.get('/', authenticateToken, requireRole('student'), favoriteController.getMyFavorites);
+// Permitir que estudiantes, ayudantes y administradores puedan usar favoritos
+router.post('/', authenticateToken, favoriteController.toggleFavorite);
+router.get('/', authenticateToken, favoriteController.getMyFavorites);
 
 module.exports = router;
 
