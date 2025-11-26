@@ -18,6 +18,8 @@ router.put('/helpers/:id', authenticateToken, requireRole('admin'), adminControl
 router.delete('/helpers/:id', authenticateToken, requireRole('admin'), adminController.deleteHelper);
 
 // Admins CRUD
+router.get('/admins/me', authenticateToken, requireRole('admin'), adminController.getMe);
+router.put('/admins/me', authenticateToken, requireRole('admin'), adminController.updateMe);
 router.get('/admins', authenticateToken, requireRole('admin'), adminController.getAdmins);
 router.post('/admins', authenticateToken, requireRole('admin'), adminController.createAdmin);
 router.put('/admins/:id', authenticateToken, requireRole('admin'), adminController.updateAdmin);

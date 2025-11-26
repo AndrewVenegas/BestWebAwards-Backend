@@ -24,7 +24,7 @@ const getMyTeams = async (req, res) => {
 const updateTeam = async (req, res) => {
   try {
     const { teamId } = req.params;
-    const { participates, displayName, appName, deployUrl, videoUrl, screenshotUrl, tipo_app } = req.body;
+    const { participates, displayName, appName, deployUrl, videoUrl, screenshotUrl, tipo_app, description } = req.body;
 
     const team = await db.Team.findOne({
       where: { id: teamId, helperId: req.user.id }
@@ -110,6 +110,10 @@ const updateTeam = async (req, res) => {
       }
     }
 
+    if (description !== undefined) {
+      team.description = description || null;
+    }
+
     // Si hay errores, retornarlos sin guardar
     if (errors.length > 0) {
       return res.status(400).json({ error: errors[0] }); // Retornar el primer error
@@ -161,9 +165,47 @@ const verifyPassword = async (req, res) => {
   }
 };
 
+const getMe = async (req, res) => {
+  try {
+    const helper = await db.Helper.findByPk(req.user.id);
+    
+    if (!helper) {
+      return res.status(404).json({ error: 'Ayudante no encontrado' });
+    }
+
+    res.json(helper);
+  } catch (error) {
+    console.error('Error en getMe:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+const updateMe = async (req, res) => {
+  try {
+    const { name, avatarUrl } = req.body;
+    const helper = await db.Helper.findByPk(req.user.id);
+
+    if (!helper) {
+      return res.status(404).json({ error: 'Ayudante no encontrado' });
+    }
+
+    if (name) helper.name = name;
+    if (avatarUrl) helper.avatarUrl = avatarUrl;
+
+    await helper.save();
+
+    res.json(helper);
+  } catch (error) {
+    console.error('Error en updateMe:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 module.exports = {
   getMyTeams,
   updateTeam,
-  verifyPassword
+  verifyPassword,
+  getMe,
+  updateMe
 };
 

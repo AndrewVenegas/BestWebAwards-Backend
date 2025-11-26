@@ -40,7 +40,7 @@ const getPodium = async (req, res) => {
         {
           model: db.Helper,
           as: 'helper',
-          attributes: ['id', 'name']
+          attributes: ['id', 'name', 'avatarUrl']
         }
       ],
       attributes: ['id']
@@ -57,7 +57,8 @@ const getPodium = async (req, res) => {
         })),
         helper: team.helper ? {
           id: team.helper.id,
-          name: team.helper.name
+          name: team.helper.name,
+          avatarUrl: team.helper.avatarUrl
         } : null
       });
     });

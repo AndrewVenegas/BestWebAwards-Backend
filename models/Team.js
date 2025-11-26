@@ -42,6 +42,16 @@ module.exports = (sequelize, DataTypes) => {
         isIn: [['Chat', 'E-commerce', 'Juego', 'Planificador', 'Red Social', 'Mix', 'Otro', null]]
       }
     },
+    description: {
+      type: DataTypes.STRING(300),
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 300],
+          msg: 'La descripción no puede exceder 300 caracteres'
+        }
+      }
+    },
     helperId: {
       type: DataTypes.INTEGER,
       allowNull: true,

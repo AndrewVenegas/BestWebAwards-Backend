@@ -266,6 +266,42 @@ const verifyAdminPassword = async (req, res) => {
   }
 };
 
+const getMe = async (req, res) => {
+  try {
+    const admin = await db.Admin.findByPk(req.user.id);
+    
+    if (!admin) {
+      return res.status(404).json({ error: 'Administrador no encontrado' });
+    }
+
+    res.json(admin);
+  } catch (error) {
+    console.error('Error en getMe:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+const updateMe = async (req, res) => {
+  try {
+    const { name, avatarUrl } = req.body;
+    const admin = await db.Admin.findByPk(req.user.id);
+
+    if (!admin) {
+      return res.status(404).json({ error: 'Administrador no encontrado' });
+    }
+
+    if (name) admin.name = name;
+    if (avatarUrl) admin.avatarUrl = avatarUrl;
+
+    await admin.save();
+
+    res.json(admin);
+  } catch (error) {
+    console.error('Error en updateMe:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 const deleteAdmin = async (req, res) => {
   try {
     const { password } = req.body;
@@ -325,7 +361,7 @@ const getTeams = async (req, res) => {
 
 const createTeam = async (req, res) => {
   try {
-    const { groupName, displayName, appName, helperId, participates, tipo_app } = req.body;
+    const { groupName, displayName, appName, helperId, participates, tipo_app, description } = req.body;
     
     const team = await db.Team.create({
       groupName,
@@ -333,7 +369,8 @@ const createTeam = async (req, res) => {
       appName,
       helperId: helperId || null,
       participates: participates || false,
-      tipo_app: tipo_app || null
+      tipo_app: tipo_app || null,
+      description: description || null
     });
     
     res.status(201).json(team);
@@ -345,7 +382,7 @@ const createTeam = async (req, res) => {
 
 const updateTeam = async (req, res) => {
   try {
-    const { groupName, displayName, appName, helperId, participates, deployUrl, videoUrl, screenshotUrl, tipo_app } = req.body;
+    const { groupName, displayName, appName, helperId, participates, deployUrl, videoUrl, screenshotUrl, tipo_app, description } = req.body;
     const team = await db.Team.findByPk(req.params.id);
     
     if (!team) {
@@ -360,6 +397,7 @@ const updateTeam = async (req, res) => {
     if (deployUrl !== undefined) team.deployUrl = deployUrl;
     if (videoUrl !== undefined) team.videoUrl = videoUrl;
     if (screenshotUrl !== undefined) team.screenshotUrl = screenshotUrl;
+    if (description !== undefined) team.description = description;
     if (tipo_app !== undefined) {
       const validTypes = ['Chat', 'E-commerce', 'Juego', 'Planificador', 'Red Social', 'Mix', 'Otro', null, ''];
       if (tipo_app && !validTypes.includes(tipo_app)) {
@@ -580,6 +618,8 @@ module.exports = {
   getVotesByStudent,
   getVotesByHelper,
   getVotesByAdmin,
-  deleteVote
+  deleteVote,
+  getMe,
+  updateMe
 };
 
