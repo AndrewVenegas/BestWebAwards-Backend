@@ -33,6 +33,12 @@ db.Student.belongsTo(db.Team, { foreignKey: 'teamId', as: 'team' });
 db.Student.hasMany(db.Vote, { foreignKey: 'studentId', as: 'votes' });
 db.Vote.belongsTo(db.Student, { foreignKey: 'studentId', as: 'student' });
 
+db.Helper.hasMany(db.Vote, { foreignKey: 'helperId', as: 'votes' });
+db.Vote.belongsTo(db.Helper, { foreignKey: 'helperId', as: 'helper' });
+
+db.Admin.hasMany(db.Vote, { foreignKey: 'adminId', as: 'votes' });
+db.Vote.belongsTo(db.Admin, { foreignKey: 'adminId', as: 'admin' });
+
 db.Team.hasMany(db.Vote, { foreignKey: 'teamId', as: 'votes' });
 db.Vote.belongsTo(db.Team, { foreignKey: 'teamId', as: 'team' });
 

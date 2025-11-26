@@ -33,6 +33,8 @@ router.delete('/teams/:id', authenticateToken, requireRole('admin'), adminContro
 // Dashboard
 router.get('/votes/summary', authenticateToken, requireRole('admin'), adminController.getVotesSummary);
 router.get('/votes/by-student', authenticateToken, requireRole('admin'), adminController.getVotesByStudent);
+router.get('/votes/by-helper', authenticateToken, requireRole('admin'), adminController.getVotesByHelper);
+router.get('/votes/by-admin', authenticateToken, requireRole('admin'), adminController.getVotesByAdmin);
 router.delete('/votes/:voteId', authenticateToken, requireRole('admin'), adminController.deleteVote);
 
 // Config

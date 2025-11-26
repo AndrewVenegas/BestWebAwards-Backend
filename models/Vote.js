@@ -7,9 +7,25 @@ module.exports = (sequelize, DataTypes) => {
     },
     studentId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'students',
+        key: 'id'
+      }
+    },
+    helperId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'helpers',
+        key: 'id'
+      }
+    },
+    adminId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'admins',
         key: 'id'
       }
     },
@@ -28,13 +44,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'votes',
-    timestamps: true,
-    indexes: [
-      {
-        unique: true,
-        fields: ['studentId', 'teamId']
-      }
-    ]
+    timestamps: true
   });
 
   return Vote;

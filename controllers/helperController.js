@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const db = require('../models');
 
 const getMyTeams = async (req, res) => {
@@ -123,8 +124,46 @@ const updateTeam = async (req, res) => {
   }
 };
 
+const verifyPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const helperId = req.user.id;
+    
+    if (!password) {
+      return res.status(400).json({ error: 'La contraseña es requerida' });
+    }
+    
+    const helper = await db.Helper.findByPk(helperId);
+    if (!helper) {
+      return res.status(404).json({ error: 'Ayudante no encontrado' });
+    }
+    
+    const isValidPassword = await bcrypt.compare(password, helper.passwordHash);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    // Obtener número de votos actuales
+    const voteCount = await db.Vote.count({
+      where: { helperId: helperId }
+    });
+
+    const remainingVotes = 3 - voteCount;
+    
+    res.json({ 
+      valid: true,
+      remainingVotes: remainingVotes
+    });
+  } catch (error) {
+    console.error('Error en verifyPassword:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 module.exports = {
   getMyTeams,
-  updateTeam
+  updateTeam,
+  verifyPassword
 };
 

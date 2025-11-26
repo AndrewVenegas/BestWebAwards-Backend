@@ -4,11 +4,35 @@ const { Op } = require('sequelize');
 const createVote = async (req, res) => {
   try {
     const { teamId } = req.body;
-    const studentId = req.user.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-    // Verificar que el estudiante no haya superado los 3 votos
+    // Determinar qué campo usar según el rol del usuario
+    let voteWhere = {};
+    let voteData = { teamId };
+
+    // Usar req.user.type como fuente principal ya que es más confiable
+    const userType = req.user.type || userRole;
+
+    if (userType === 'student') {
+      voteWhere = { studentId: userId };
+      voteData.studentId = userId;
+      // No establecer helperId ni adminId (quedarán como NULL)
+    } else if (userType === 'helper') {
+      voteWhere = { helperId: userId };
+      voteData.helperId = userId;
+      // No establecer studentId ni adminId (quedarán como NULL)
+    } else if (userType === 'admin') {
+      voteWhere = { adminId: userId };
+      voteData.adminId = userId;
+      // No establecer studentId ni helperId (quedarán como NULL)
+    } else {
+      return res.status(403).json({ error: 'Rol no permitido para votar. Tipo de usuario: ' + userType });
+    }
+
+    // Verificar que el usuario no haya superado los 3 votos
     const voteCount = await db.Vote.count({
-      where: { studentId }
+      where: voteWhere
     });
 
     if (voteCount >= 3) {
@@ -17,7 +41,7 @@ const createVote = async (req, res) => {
 
     // Verificar que no haya votado por este equipo antes
     const existingVote = await db.Vote.findOne({
-      where: { studentId, teamId }
+      where: { ...voteWhere, teamId }
     });
 
     if (existingVote) {
@@ -46,18 +70,26 @@ const createVote = async (req, res) => {
     }
 
     // Crear el voto
-    const vote = await db.Vote.create({
-      studentId,
-      teamId
-    });
+    const vote = await db.Vote.create(voteData);
 
     res.status(201).json(vote);
   } catch (error) {
     console.error('Error en createVote:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      userType: req.user?.type
+    });
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({ error: 'Ya has votado por este equipo' });
     }
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (error.name === 'SequelizeDatabaseError' || error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.message || 'Error de validación en la base de datos' });
+    }
+    res.status(500).json({ error: 'Error interno del servidor: ' + error.message });
   }
 };
 
@@ -69,20 +101,30 @@ const getVisibleCounts = async (req, res) => {
     const votingClosed = config && now > new Date(config.votingDeadline);
 
     // Si las votaciones están cerradas, mostrar conteos a todos
-    // Si están abiertas, solo mostrar si el estudiante ha votado
+    // Si están abiertas, solo mostrar si el usuario ha votado
     if (!votingClosed) {
-      // Solo verificar votos del estudiante si es estudiante
-      if (req.user.role === 'student') {
-        const studentId = req.user.id;
+      const userId = req.user.id;
+      const userRole = req.user.role;
+
+      let voteWhere = {};
+      if (userRole === 'student') {
+        voteWhere = { studentId: userId };
+      } else if (userRole === 'helper') {
+        voteWhere = { helperId: userId };
+      } else if (userRole === 'admin') {
+        voteWhere = { adminId: userId };
+      }
+
+      if (Object.keys(voteWhere).length > 0) {
         const voteCount = await db.Vote.count({
-          where: { studentId }
+          where: voteWhere
         });
 
         if (voteCount === 0) {
           return res.json({ showCounts: false, counts: [] });
         }
       } else {
-        // Si no es estudiante y las votaciones están abiertas, no mostrar conteos
+        // Si no es un rol válido y las votaciones están abiertas, no mostrar conteos
         return res.json({ showCounts: false, counts: [] });
       }
     }
@@ -119,8 +161,43 @@ const getVisibleCounts = async (req, res) => {
   }
 };
 
+const getMyVotes = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    let voteWhere = {};
+    if (userRole === 'student') {
+      voteWhere = { studentId: userId };
+    } else if (userRole === 'helper') {
+      voteWhere = { helperId: userId };
+    } else if (userRole === 'admin') {
+      voteWhere = { adminId: userId };
+    } else {
+      return res.status(403).json({ error: 'Rol no permitido' });
+    }
+
+    const votes = await db.Vote.findAll({
+      where: voteWhere,
+      include: [
+        {
+          model: db.Team,
+          as: 'team'
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json(votes);
+  } catch (error) {
+    console.error('Error en getMyVotes:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 module.exports = {
   createVote,
-  getVisibleCounts
+  getVisibleCounts,
+  getMyVotes
 };
 

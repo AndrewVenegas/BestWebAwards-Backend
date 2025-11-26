@@ -5,6 +5,7 @@ const { authenticateToken, requireRole } = require('../middlewares/auth');
 
 router.get('/me/teams', authenticateToken, requireRole('helper'), helperController.getMyTeams);
 router.put('/teams/:teamId', authenticateToken, requireRole('helper'), helperController.updateTeam);
+router.post('/me/verify-password', authenticateToken, requireRole('helper'), helperController.verifyPassword);
 
 module.exports = router;
 

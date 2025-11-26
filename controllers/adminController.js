@@ -248,8 +248,18 @@ const verifyAdminPassword = async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
+
+    // Obtener número de votos actuales
+    const voteCount = await db.Vote.count({
+      where: { adminId: adminId }
+    });
+
+    const remainingVotes = 3 - voteCount;
     
-    res.json({ valid: true });
+    res.json({ 
+      valid: true,
+      remainingVotes: remainingVotes
+    });
   } catch (error) {
     console.error('Error en verifyAdminPassword:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -455,6 +465,84 @@ const getVotesByStudent = async (req, res) => {
   }
 };
 
+const getVotesByHelper = async (req, res) => {
+  try {
+    const helpers = await db.Helper.findAll({
+      include: [
+        {
+          model: db.Vote,
+          as: 'votes',
+          include: [
+            {
+              model: db.Team,
+              as: 'team'
+            }
+          ]
+        }
+      ],
+      order: [['name', 'ASC']]
+    });
+
+    const result = helpers.map(helper => ({
+      helperId: helper.id,
+      helperName: helper.name,
+      helperEmail: helper.email,
+      votes: helper.votes.map(vote => ({
+        voteId: vote.id,
+        teamId: vote.team.id,
+        teamName: vote.team.groupName,
+        displayName: vote.team.displayName,
+        appName: vote.team.appName,
+        createdAt: vote.createdAt
+      }))
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error en getVotesByHelper:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+const getVotesByAdmin = async (req, res) => {
+  try {
+    const admins = await db.Admin.findAll({
+      include: [
+        {
+          model: db.Vote,
+          as: 'votes',
+          include: [
+            {
+              model: db.Team,
+              as: 'team'
+            }
+          ]
+        }
+      ],
+      order: [['name', 'ASC']]
+    });
+
+    const result = admins.map(admin => ({
+      adminId: admin.id,
+      adminName: admin.name,
+      adminEmail: admin.email,
+      votes: admin.votes.map(vote => ({
+        voteId: vote.id,
+        teamId: vote.team.id,
+        teamName: vote.team.groupName,
+        displayName: vote.team.displayName,
+        appName: vote.team.appName,
+        createdAt: vote.createdAt
+      }))
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error en getVotesByAdmin:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
 const deleteVote = async (req, res) => {
   try {
     const vote = await db.Vote.findByPk(req.params.voteId);
@@ -490,6 +578,8 @@ module.exports = {
   deleteTeam,
   getVotesSummary,
   getVotesByStudent,
+  getVotesByHelper,
+  getVotesByAdmin,
   deleteVote
 };
 
