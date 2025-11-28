@@ -58,13 +58,28 @@ const createVote = async (req, res) => {
       return res.status(400).json({ error: 'Este equipo no está participando' });
     }
 
-    // Verificar deadline de votación
+    // Verificar deadline de votación y periodo de carga de datos
     const config = await db.Config.findOne({ where: { id: 1 } });
     if (!config) {
       return res.status(500).json({ error: 'Configuración no encontrada' });
     }
 
     const now = new Date();
+    
+    // Si está en periodo de carga de datos, no permitir votos
+    if (config.dataLoadingPeriod) {
+      return res.status(400).json({ error: 'Las votaciones están deshabilitadas durante el periodo de carga de datos' });
+    }
+    
+    // Verificar si las votaciones han comenzado
+    if (config.votingStartDate) {
+      const startDate = new Date(config.votingStartDate);
+      if (now < startDate) {
+        return res.status(400).json({ error: 'Las votaciones aún no han comenzado' });
+      }
+    }
+    
+    // Verificar si las votaciones han cerrado
     if (now > new Date(config.votingDeadline)) {
       return res.status(400).json({ error: 'El período de votación ha cerrado' });
     }
@@ -95,9 +110,15 @@ const createVote = async (req, res) => {
 
 const getVisibleCounts = async (req, res) => {
   try {
-    // Verificar si las votaciones están cerradas
+    // Verificar si las votaciones están cerradas o en periodo de carga de datos
     const config = await db.Config.findOne({ where: { id: 1 } });
     const now = new Date();
+    
+    // Si está en periodo de carga de datos, no mostrar conteos
+    if (config && config.dataLoadingPeriod) {
+      return res.json({ showCounts: false, counts: [] });
+    }
+    
     const votingClosed = config && now > new Date(config.votingDeadline);
 
     // Si las votaciones están cerradas, mostrar conteos a todos

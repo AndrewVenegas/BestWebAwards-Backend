@@ -11,16 +11,39 @@ const getConfig = async (req, res) => {
       
       config = await db.Config.create({
         id: 1,
-        votingDeadline: defaultDeadline
+        votingDeadline: defaultDeadline,
+        dataLoadingPeriod: false,
+        votingStartDate: null
       });
     }
 
     const now = new Date();
     const deadline = new Date(config.votingDeadline);
-    const isOpen = now <= deadline;
+    
+    // Si está en periodo de carga de datos, las votaciones están cerradas
+    // Si no está en periodo de carga, verificar si estamos entre inicio y fin
+    let isOpen = false;
+    if (config.dataLoadingPeriod) {
+      // En periodo de carga de datos, las votaciones están cerradas
+      isOpen = false;
+    } else {
+      // Verificar si estamos dentro del periodo de votación
+      const startDate = config.votingStartDate ? new Date(config.votingStartDate) : null;
+      const endDate = new Date(config.votingDeadline);
+      
+      if (startDate && now < startDate) {
+        // Aún no ha comenzado el periodo de votación
+        isOpen = false;
+      } else {
+        // Estamos en el periodo de votación (o no hay fecha de inicio)
+        isOpen = now <= endDate;
+      }
+    }
 
     res.json({
       votingDeadline: config.votingDeadline,
+      votingStartDate: config.votingStartDate,
+      dataLoadingPeriod: config.dataLoadingPeriod,
       isOpen
     });
   } catch (error) {
@@ -31,7 +54,7 @@ const getConfig = async (req, res) => {
 
 const updateVotingDeadline = async (req, res) => {
   try {
-    const { votingDeadline } = req.body;
+    const { votingDeadline, votingStartDate, dataLoadingPeriod } = req.body;
 
     if (!votingDeadline) {
       return res.status(400).json({ error: 'votingDeadline es requerido' });
@@ -42,19 +65,41 @@ const updateVotingDeadline = async (req, res) => {
     if (!config) {
       config = await db.Config.create({
         id: 1,
-        votingDeadline: new Date(votingDeadline)
+        votingDeadline: new Date(votingDeadline),
+        votingStartDate: votingStartDate ? new Date(votingStartDate) : null,
+        dataLoadingPeriod: dataLoadingPeriod || false
       });
     } else {
       config.votingDeadline = new Date(votingDeadline);
+      if (votingStartDate !== undefined) {
+        config.votingStartDate = votingStartDate ? new Date(votingStartDate) : null;
+      }
+      if (dataLoadingPeriod !== undefined) {
+        config.dataLoadingPeriod = dataLoadingPeriod;
+      }
       await config.save();
     }
 
     const now = new Date();
     const deadline = new Date(config.votingDeadline);
-    const isOpen = now <= deadline;
+    
+    // Si está en periodo de carga de datos, las votaciones están cerradas
+    let isOpen = false;
+    if (config.dataLoadingPeriod) {
+      isOpen = false;
+    } else {
+      const startDate = config.votingStartDate ? new Date(config.votingStartDate) : null;
+      if (startDate && now < startDate) {
+        isOpen = false;
+      } else {
+        isOpen = now <= deadline;
+      }
+    }
 
     res.json({
       votingDeadline: config.votingDeadline,
+      votingStartDate: config.votingStartDate,
+      dataLoadingPeriod: config.dataLoadingPeriod,
       isOpen
     });
   } catch (error) {

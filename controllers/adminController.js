@@ -248,7 +248,7 @@ const verifyAdminPassword = async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
-
+    
     // Obtener número de votos actuales
     const voteCount = await db.Vote.count({
       where: { adminId: adminId }
