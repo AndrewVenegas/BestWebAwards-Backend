@@ -103,18 +103,80 @@ const getHelpers = async (req, res) => {
 const createHelper = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    
+    // Validar campos requeridos
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+    
+    // Validar longitud mínima de contraseña
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    
+    // Normalizar email: trim y lowercase
+    const normalizedEmail = email.trim().toLowerCase();
+    
     const passwordHash = await bcrypt.hash(password, 10);
     
     const helper = await db.Helper.create({
       name,
-      email,
+      email: normalizedEmail,
       passwordHash
     });
     
     res.status(201).json(helper);
   } catch (error) {
     console.error('Error en createHelper:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    if (error.errors) {
+      console.error('Error errors:', error.errors);
+    }
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      // Verificar si el error es por ID (secuencia desincronizada) o por email
+      const idInError = error.errors?.find(e => e.path === 'id');
+      const emailInError = error.errors?.find(e => e.path === 'email');
+      
+      if (idInError) {
+        // La secuencia de auto-incremento está desincronizada
+        // Arreglar la secuencia automáticamente
+        try {
+          const maxId = await db.Helper.max('id');
+          await db.sequelize.query(`SELECT setval('helpers_id_seq', ${maxId || 0}, true);`);
+          console.log(`Secuencia de helpers arreglada. Nuevo valor: ${maxId || 0}`);
+          
+          // Reintentar la creación
+          const helper = await db.Helper.create({
+            name,
+            email: normalizedEmail,
+            passwordHash
+          });
+          return res.status(201).json(helper);
+        } catch (retryError) {
+          console.error('Error al arreglar secuencia y reintentar:', retryError);
+          return res.status(500).json({ error: 'Error al crear el ayudante. Por favor, contacta al administrador.' });
+        }
+      }
+      
+      if (emailInError) {
+        return res.status(400).json({ 
+          error: 'Ya existe un ayudante con este email'
+        });
+      }
+      
+      return res.status(400).json({ 
+        error: 'El email ya está en uso'
+      });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.errors[0]?.message || 'Error de validación' });
+    }
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('Database error:', error.original);
+      return res.status(400).json({ error: 'Error en la base de datos: ' + (error.original?.message || error.message) });
+    }
+    res.status(500).json({ error: 'Error interno del servidor', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 };
 
@@ -180,17 +242,14 @@ const createAdmin = async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
     
-    // Verificar si el email ya existe
-    const existingAdmin = await db.Admin.findOne({ where: { email } });
-    if (existingAdmin) {
-      return res.status(400).json({ error: 'Ya existe un administrador con este email' });
-    }
+    // Normalizar email: trim y lowercase
+    const normalizedEmail = email.trim().toLowerCase();
     
     const passwordHash = await bcrypt.hash(password, 10);
     
     const admin = await db.Admin.create({
       name,
-      email,
+      email: normalizedEmail,
       passwordHash,
       role: 'admin'
     });
@@ -198,13 +257,56 @@ const createAdmin = async (req, res) => {
     res.status(201).json(admin);
   } catch (error) {
     console.error('Error en createAdmin:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    if (error.errors) {
+      console.error('Error errors:', error.errors);
+    }
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ error: 'Ya existe un administrador con este email' });
+      // Verificar si el error es por ID (secuencia desincronizada) o por email
+      const idInError = error.errors?.find(e => e.path === 'id');
+      const emailInError = error.errors?.find(e => e.path === 'email');
+      
+      if (idInError) {
+        // La secuencia de auto-incremento está desincronizada
+        // Arreglar la secuencia automáticamente
+        try {
+          const maxId = await db.Admin.max('id');
+          await db.sequelize.query(`SELECT setval('admins_id_seq', ${maxId || 0}, true);`);
+          console.log(`Secuencia de admins arreglada. Nuevo valor: ${maxId || 0}`);
+          
+          // Reintentar la creación
+          const admin = await db.Admin.create({
+            name,
+            email: normalizedEmail,
+            passwordHash,
+            role: 'admin'
+          });
+          return res.status(201).json(admin);
+        } catch (retryError) {
+          console.error('Error al arreglar secuencia y reintentar:', retryError);
+          return res.status(500).json({ error: 'Error al crear el administrador. Por favor, contacta al administrador.' });
+        }
+      }
+      
+      if (emailInError) {
+        return res.status(400).json({ 
+          error: 'Ya existe un administrador con este email'
+        });
+      }
+      
+      return res.status(400).json({ 
+        error: 'El email ya está en uso'
+      });
     }
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({ error: error.errors[0]?.message || 'Error de validación' });
     }
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (error.name === 'SequelizeDatabaseError') {
+      console.error('Database error:', error.original);
+      return res.status(400).json({ error: 'Error en la base de datos: ' + (error.original?.message || error.message) });
+    }
+    res.status(500).json({ error: 'Error interno del servidor', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
   }
 };
 
