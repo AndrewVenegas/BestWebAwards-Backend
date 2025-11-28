@@ -1,5 +1,6 @@
 const db = require('../models');
 const { Op } = require('sequelize');
+const { consoleDebug } = require('../utils/debug');
 
 const createVote = async (req, res) => {
   try {
@@ -89,8 +90,8 @@ const createVote = async (req, res) => {
 
     res.status(201).json(vote);
   } catch (error) {
-    console.error('Error en createVote:', error);
-    console.error('Error details:', {
+    consoleDebug('Error en createVote:', error);
+    consoleDebug('Error details:', {
       message: error.message,
       name: error.name,
       stack: error.stack,
@@ -177,7 +178,7 @@ const getVisibleCounts = async (req, res) => {
 
     res.json({ showCounts: true, counts });
   } catch (error) {
-    console.error('Error en getVisibleCounts:', error);
+    consoleDebug('Error en getVisibleCounts:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -211,7 +212,7 @@ const getMyVotes = async (req, res) => {
 
     res.json(votes);
   } catch (error) {
-    console.error('Error en getMyVotes:', error);
+    consoleDebug('Error en getMyVotes:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

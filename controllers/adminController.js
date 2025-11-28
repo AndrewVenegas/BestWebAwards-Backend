@@ -290,8 +290,8 @@ const updateMe = async (req, res) => {
       return res.status(404).json({ error: 'Administrador no encontrado' });
     }
 
-    if (name) admin.name = name;
-    if (avatarUrl) admin.avatarUrl = avatarUrl;
+    if (name !== undefined) admin.name = name;
+    if (avatarUrl !== undefined) admin.avatarUrl = avatarUrl || null;
 
     await admin.save();
 

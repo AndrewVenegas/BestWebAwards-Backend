@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const db = require('./models');
+const { consoleDebug } = require('./utils/debug');
 
 const app = express();
 
@@ -37,8 +38,8 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: 'Error al procesar el archivo: ' + err.message });
   }
   
-  console.error('Error en servidor:', err);
-  console.error('Stack:', err.stack);
+  consoleDebug('Error en servidor:', err);
+  consoleDebug('Stack:', err.stack);
   res.status(500).json({ 
     error: 'Error interno del servidor',
     details: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -56,7 +57,7 @@ db.sequelize.authenticate()
     });
   })
   .catch((error) => {
-    console.error('Error al conectar con la base de datos:', error);
+    consoleDebug('Error al conectar con la base de datos:', error);
     process.exit(1);
   });
 

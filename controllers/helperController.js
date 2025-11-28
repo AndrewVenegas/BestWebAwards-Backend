@@ -189,8 +189,8 @@ const updateMe = async (req, res) => {
       return res.status(404).json({ error: 'Ayudante no encontrado' });
     }
 
-    if (name) helper.name = name;
-    if (avatarUrl) helper.avatarUrl = avatarUrl;
+    if (name !== undefined) helper.name = name;
+    if (avatarUrl !== undefined) helper.avatarUrl = avatarUrl || null;
 
     await helper.save();
 

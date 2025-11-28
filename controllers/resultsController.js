@@ -1,4 +1,5 @@
 const db = require('../models');
+const { consoleDebug } = require('../utils/debug');
 
 const getPodium = async (req, res) => {
   try {
@@ -124,11 +125,11 @@ const getPodium = async (req, res) => {
       previousVoteCount = voteCount;
     }
 
-    console.log('Podium results:', podium.length, 'teams with votes');
+    consoleDebug('Podium results:', podium.length, 'teams with votes');
     res.json(podium);
   } catch (error) {
-    console.error('Error en getPodium:', error);
-    console.error('Error stack:', error.stack);
+    consoleDebug('Error en getPodium:', error);
+    consoleDebug('Error stack:', error.stack);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

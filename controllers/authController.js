@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../models');
+const { consoleDebug } = require('../utils/debug');
 
 const login = async (req, res) => {
   try {
@@ -61,7 +62,7 @@ const login = async (req, res) => {
       user: userData
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    consoleDebug('Error en login:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

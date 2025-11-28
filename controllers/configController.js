@@ -1,4 +1,5 @@
 const db = require('../models');
+const { consoleDebug } = require('../utils/debug');
 
 const getConfig = async (req, res) => {
   try {
@@ -47,7 +48,7 @@ const getConfig = async (req, res) => {
       isOpen
     });
   } catch (error) {
-    console.error('Error en getConfig:', error);
+    consoleDebug('Error en getConfig:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -103,7 +104,7 @@ const updateVotingDeadline = async (req, res) => {
       isOpen
     });
   } catch (error) {
-    console.error('Error en updateVotingDeadline:', error);
+    consoleDebug('Error en updateVotingDeadline:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

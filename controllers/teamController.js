@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const db = require('../models');
+const { consoleDebug } = require('../utils/debug');
 
 const getAllTeams = async (req, res) => {
   try {
@@ -41,7 +42,7 @@ const getAllTeams = async (req, res) => {
 
     res.json(teams);
   } catch (error) {
-    console.error('Error en getAllTeams:', error);
+    consoleDebug('Error en getAllTeams:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -70,7 +71,7 @@ const getTeamById = async (req, res) => {
 
     res.json(team);
   } catch (error) {
-    console.error('Error en getTeamById:', error);
+    consoleDebug('Error en getTeamById:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

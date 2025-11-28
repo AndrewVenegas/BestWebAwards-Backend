@@ -38,8 +38,8 @@ const updateMe = async (req, res) => {
       return res.status(404).json({ error: 'Estudiante no encontrado' });
     }
 
-    if (name) student.name = name;
-    if (avatarUrl) student.avatarUrl = avatarUrl;
+    if (name !== undefined) student.name = name;
+    if (avatarUrl !== undefined) student.avatarUrl = avatarUrl || null;
 
     await student.save();
 
