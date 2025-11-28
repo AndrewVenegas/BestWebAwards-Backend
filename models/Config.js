@@ -9,14 +9,22 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: false
     },
-    dataLoadingPeriod: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false
-    },
     votingStartDate: {
       type: DataTypes.DATE,
       allowNull: true
+    },
+    dataLoadingStartDate: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    dataLoadingEndDate: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    votingPaused: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false
     }
   }, {
     tableName: 'configs',

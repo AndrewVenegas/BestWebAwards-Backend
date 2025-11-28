@@ -41,6 +41,7 @@ router.delete('/votes/:voteId', authenticateToken, requireRole('admin'), adminCo
 
 // Config
 router.put('/config/voting-deadline', authenticateToken, requireRole('admin'), configController.updateVotingDeadline);
+router.post('/config/toggle-paused', authenticateToken, requireRole('admin'), configController.toggleVotingPaused);
 
 module.exports = router;
 

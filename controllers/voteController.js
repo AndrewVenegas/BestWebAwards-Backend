@@ -67,8 +67,17 @@ const createVote = async (req, res) => {
 
     const now = new Date();
     
-    // Si está en periodo de carga de datos, no permitir votos
-    if (config.dataLoadingPeriod) {
+    // Verificar si las votaciones están pausadas manualmente
+    if (config.votingPaused) {
+      return res.status(400).json({ error: 'Las votaciones están pausadas' });
+    }
+    
+    // Verificar si estamos en periodo de carga de datos
+    const isInDataLoadingPeriod = config.dataLoadingStartDate && config.dataLoadingEndDate
+      ? now >= new Date(config.dataLoadingStartDate) && now <= new Date(config.dataLoadingEndDate)
+      : false;
+    
+    if (isInDataLoadingPeriod) {
       return res.status(400).json({ error: 'Las votaciones están deshabilitadas durante el periodo de carga de datos' });
     }
     
@@ -115,8 +124,13 @@ const getVisibleCounts = async (req, res) => {
     const config = await db.Config.findOne({ where: { id: 1 } });
     const now = new Date();
     
-    // Si está en periodo de carga de datos, no mostrar conteos
-    if (config && config.dataLoadingPeriod) {
+    // Verificar si estamos en periodo de carga de datos
+    const isInDataLoadingPeriod = config && config.dataLoadingStartDate && config.dataLoadingEndDate
+      ? now >= new Date(config.dataLoadingStartDate) && now <= new Date(config.dataLoadingEndDate)
+      : false;
+    
+    // Si está en periodo de carga de datos o pausadas, no mostrar conteos
+    if (config && (isInDataLoadingPeriod || config.votingPaused)) {
       return res.json({ showCounts: false, counts: [] });
     }
     
