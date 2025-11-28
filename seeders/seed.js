@@ -58,6 +58,13 @@ const seed = async () => {
       });
     }
     console.log(`${adminsData.length} admins creados`);
+    
+    // Arreglar secuencia de admins después de crear con IDs específicos
+    const maxAdminId = await db.Admin.max('id');
+    if (maxAdminId) {
+      await db.sequelize.query(`SELECT setval('admins_id_seq', ${maxAdminId}, true);`);
+      console.log(`Secuencia de admins ajustada a ${maxAdminId}`);
+    }
 
     // Crear Helpers
     console.log('Creando helpers...');
@@ -74,6 +81,13 @@ const seed = async () => {
       });
     }
     console.log(`${helpersData.length} helpers creados`);
+    
+    // Arreglar secuencia de helpers después de crear con IDs específicos
+    const maxHelperId = await db.Helper.max('id');
+    if (maxHelperId) {
+      await db.sequelize.query(`SELECT setval('helpers_id_seq', ${maxHelperId}, true);`);
+      console.log(`Secuencia de helpers ajustada a ${maxHelperId}`);
+    }
 
     // Crear Teams
     console.log('Creando teams...');

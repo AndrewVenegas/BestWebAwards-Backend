@@ -47,6 +47,37 @@ const createStudent = async (req, res) => {
     res.status(201).json(student);
   } catch (error) {
     console.error('Error en createStudent:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      // Verificar si el error es por ID (secuencia desincronizada) o por email
+      const idInError = error.errors?.find(e => e.path === 'id');
+      const emailInError = error.errors?.find(e => e.path === 'email');
+      
+      if (idInError) {
+        // La secuencia de auto-incremento está desincronizada
+        try {
+          const maxId = await db.Student.max('id');
+          await db.sequelize.query(`SELECT setval('students_id_seq', ${maxId || 0}, true);`);
+          console.log(`Secuencia de students arreglada. Nuevo valor: ${maxId || 0}`);
+          
+          // Reintentar la creación
+          const student = await db.Student.create({
+            name,
+            email,
+            passwordHash,
+            teamId: teamId || null,
+            hasSeenIntro: false
+          });
+          return res.status(201).json(student);
+        } catch (retryError) {
+          console.error('Error al arreglar secuencia y reintentar:', retryError);
+          return res.status(500).json({ error: 'Error al crear el estudiante. Por favor, contacta al administrador.' });
+        }
+      }
+      
+      if (emailInError) {
+        return res.status(400).json({ error: 'Ya existe un estudiante con este email' });
+      }
+    }
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -478,6 +509,39 @@ const createTeam = async (req, res) => {
     res.status(201).json(team);
   } catch (error) {
     console.error('Error en createTeam:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      // Verificar si el error es por ID (secuencia desincronizada) o por otro campo único
+      const idInError = error.errors?.find(e => e.path === 'id');
+      const groupNameInError = error.errors?.find(e => e.path === 'groupName');
+      
+      if (idInError) {
+        // La secuencia de auto-incremento está desincronizada
+        try {
+          const maxId = await db.Team.max('id');
+          await db.sequelize.query(`SELECT setval('teams_id_seq', ${maxId || 0}, true);`);
+          console.log(`Secuencia de teams arreglada. Nuevo valor: ${maxId || 0}`);
+          
+          // Reintentar la creación
+          const team = await db.Team.create({
+            groupName,
+            displayName,
+            appName,
+            helperId: helperId || null,
+            participates: participates || false,
+            tipo_app: tipo_app || null,
+            description: description || null
+          });
+          return res.status(201).json(team);
+        } catch (retryError) {
+          console.error('Error al arreglar secuencia y reintentar:', retryError);
+          return res.status(500).json({ error: 'Error al crear el equipo. Por favor, contacta al administrador.' });
+        }
+      }
+      
+      if (groupNameInError) {
+        return res.status(400).json({ error: 'Ya existe un equipo con este nombre de grupo' });
+      }
+    }
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
