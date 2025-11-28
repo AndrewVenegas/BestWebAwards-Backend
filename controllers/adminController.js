@@ -595,6 +595,47 @@ const deleteVote = async (req, res) => {
   }
 };
 
+const resetAllVotes = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const adminId = req.user.id; // ID del admin logueado
+    
+    if (!password) {
+      return res.status(400).json({ error: 'La contraseña es requerida' });
+    }
+    
+    // Verificar la contraseña del admin logueado
+    const admin = await db.Admin.findByPk(adminId);
+    if (!admin) {
+      return res.status(404).json({ error: 'Administrador no encontrado' });
+    }
+    
+    const isValidPassword = await bcrypt.compare(password, admin.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+    
+    // Contar votos antes de eliminar para reportar cuántos se eliminaron
+    const voteCountBefore = await db.Vote.count();
+    
+    // Eliminar todos los votos usando una consulta SQL directa
+    // En PostgreSQL, necesitamos usar RETURNING o contar antes
+    await db.sequelize.query('DELETE FROM votes');
+    
+    res.json({ 
+      message: 'Todos los votos han sido eliminados',
+      deletedCount: voteCountBefore
+    });
+  } catch (error) {
+    console.error('Error en resetAllVotes:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Error interno del servidor',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   getStudents,
   getStudent,
@@ -619,6 +660,7 @@ module.exports = {
   getVotesByHelper,
   getVotesByAdmin,
   deleteVote,
+  resetAllVotes,
   getMe,
   updateMe
 };
