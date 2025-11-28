@@ -47,13 +47,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Iniciar servidor
 db.sequelize.authenticate()
   .then(() => {
     console.log('Conexión a la base de datos establecida');
-    app.listen(PORT, () => {
-      console.log(`Servidor corriendo en puerto ${PORT}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`Servidor corriendo en ${HOST}:${PORT}`);
     });
   })
   .catch((error) => {
